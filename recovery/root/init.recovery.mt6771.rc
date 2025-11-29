@@ -18,13 +18,11 @@ service keystore_auth /system/bin/keystore_auth
     oneshot
     user system
     group root
-    disabled
     seclabel u:r:recovery:s0
 
 service keystore /system/bin/keystore /tmp/misc/keystore
     user root
     group root drmrpc readproc
-    disabled
     seclabel u:r:recovery:s0
 
 
@@ -35,6 +33,11 @@ on fs && property:ro.debuggable=0
     start adbd
 
 on post-fs
+    mkdir /data/misc 0771 system misc
+    mkdir /data/misc/gatekeeper 0700 system system
+    mkdir /data/misc/keystore 0700 keystore keystore
+    mkdir /data/system 0775 system system
+
     # Support A/B feature for EMMC and UFS boot region
     wait /dev/block/mmcblk0boot0 2
     symlink /dev/block/sda /dev/block/mmcblk0boot0
@@ -109,10 +112,13 @@ service mobicore /vendor/bin/mcDriverDaemon --P1 /mnt/vendor/persist/mcRegistry 
 #For decryption
 
 on property:hwservicemanager.ready=true
+    start keystore_auth
+    start keystore
     start hal_cryptoeng_oppo
     start mobicore
     start keymaster-3-0
     start gatekeeper-1-0
+    start gatekeeperd
 
 on property:ro.crypto.state=unsupported
     stop hal_cryptoeng_oppo
