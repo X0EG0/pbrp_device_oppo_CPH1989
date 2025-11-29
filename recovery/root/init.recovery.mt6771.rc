@@ -1,7 +1,14 @@
 import /tee.rc
 
 on init
-#for persist mounting and decryption too
+    mount cgroup none /acct cpuacct
+    mkdir /acct/uid
+    mkdir /dev/cpuctl
+    mount cgroup none /dev/cpuctl cpu
+    mkdir /dev/memcg
+    mount cgroup none /dev/memcg memory
+
+    # persist mounting and decryption too
 mkdir /mnt/vendor/persist
 mount ext4 /dev/block/by-name/persist /mnt/vendor/persist rw
 setprop persist.sys.firstlaunch false
@@ -18,14 +25,12 @@ service keystore_auth /system/bin/keystore_auth
     oneshot
     user system
     group root
-    disabled
-    seclabel u:r:recovery:s0
+        seclabel u:r:recovery:s0
 
 service keystore /system/bin/keystore /tmp/misc/keystore
     user root
     group root drmrpc readproc
-    disabled
-    seclabel u:r:recovery:s0
+        seclabel u:r:recovery:s0
 
 
 on fs && property:ro.debuggable=0
@@ -55,8 +60,7 @@ on post-fs
 service gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
     user root
     group root
-    disabled
-    seclabel u:r:recovery:s0
+        seclabel u:r:recovery:s0
 
 service gatekeeperd /system/bin/gatekeeperd /data/misc/gatekeeper
     seclabel u:r:recovery:s0
@@ -64,14 +68,12 @@ service gatekeeperd /system/bin/gatekeeperd /data/misc/gatekeeper
 service hal_cryptoeng_oppo /system/bin/hw/vendor.oplus.hardware.cryptoeng@1.0-service
      user root
     group root drmrpc
-    disabled
-    seclabel u:r:recovery:s0
+        seclabel u:r:recovery:s0
 
 service keymaster-3-0 /system/bin/android.hardware.keymaster@3.0-service.trustonic
     user root
     group root drmrpc
-    disabled
-    seclabel u:r:recovery:s0
+        seclabel u:r:recovery:s0
 
 
 service hwservicemanager /system/bin/hwservicemanager
@@ -102,13 +104,14 @@ service mobicore /vendor/bin/mcDriverDaemon --P1 /mnt/vendor/persist/mcRegistry 
     -r /odm/vendor/app/mcRegistry/09070000000000000000000000000000.drbin
     user root
     group root
-    disabled
-    seclabel u:r:recovery:s0
+        seclabel u:r:recovery:s0
 
 
 #For decryption
 
 on property:hwservicemanager.ready=true
+    start keystore_auth
+    start keystore
     start hal_cryptoeng_oppo
     start mobicore
     start keymaster-3-0
@@ -153,12 +156,11 @@ on boot
     start boot-hal-1-0   #testing for booting ofox
 
 service health-hal-2-1 /system/bin/android.hardware.health@2.1-service
-    disabled
-    user root
+        user root
 
 service boot-hal-1-0 /system/bin/android.hardware.boot@1.0-service  #testing for booting ofox
     disabled
-    user root
+        user root
 
    
 on post-fs-data
